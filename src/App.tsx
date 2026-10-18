@@ -13,6 +13,7 @@ import { ProjectDashboard } from "./components/ProjectDashboard";
 import { ResetDialog } from "./components/ResetDialog";
 import { OnboardingScene } from "./components/OnboardingScene";
 import { Arrow } from "./components/Arrow";
+import { DoorSmoke } from "./components/DoorSmoke";
 import "./App.css";
 
 const SCENE_NAMES = {
@@ -38,6 +39,7 @@ function App() {
   const [fieldError, setFieldError] = useState("");
   const [notice, setNotice] = useState("");
   const [resetOpen, setResetOpen] = useState(false);
+  const [smokePaused, setSmokePaused] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const headingRef = useRef<HTMLHeadingElement>(null);
   const scene = blocked
@@ -152,7 +154,7 @@ function App() {
   return (
     <div className="app-shell" data-scene={scene}>
       <div className="scene-backdrop" aria-hidden="true" />
-      <div className="scene-mist" aria-hidden="true" />
+      <DoorSmoke paused={smokePaused} />
       <a className="skip-link" href="#main-content">
         본문으로 건너뛰기
       </a>
@@ -242,7 +244,18 @@ function App() {
             ? SCENE_NAMES[scene]
             : `${String(sceneNumber).padStart(2, "0")}. ${SCENE_NAMES[scene]}`}
         </span>
-        <span>로컬 체험 · 이 브라우저에만 저장됩니다.</span>
+        <div className="footer-meta">
+          <span>로컬 체험 · 이 브라우저에만 저장됩니다.</span>
+          <button
+            type="button"
+            className="motion-toggle"
+            aria-label="배경 연기 애니메이션"
+            aria-pressed={!smokePaused}
+            onClick={() => setSmokePaused((value) => !value)}
+          >
+            모션 <span aria-hidden="true">{smokePaused ? "끔" : "켬"}</span>
+          </button>
+        </div>
       </footer>
       <ResetDialog
         open={resetOpen}

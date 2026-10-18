@@ -27,20 +27,24 @@
 .app-shell[data-scene="dashboard"] .scene-backdrop {
   opacity: 0.14;
 }
-.scene-mist {
+.door-smoke {
   position: fixed;
+  inset: 0;
   z-index: -2;
   pointer-events: none;
-  left: -5%;
-  bottom: -8%;
-  width: 110%;
-  height: 30%;
-  opacity: 0.12;
-  background:
-    radial-gradient(ellipse at 30% 70%, #c8a47755, transparent 60%),
-    radial-gradient(ellipse at 75% 95%, #d8d2c244, transparent 60%);
-  filter: blur(30px);
-  animation: mist-drift 12s ease-in-out infinite alternate;
+  width: 100%;
+  height: 100%;
+  opacity: 0.85;
+  transition: opacity 0.6s;
+}
+.app-shell:not([data-scene="opening"]) .door-smoke {
+  opacity: 0.2;
+}
+.app-shell[data-scene="agreement"] .door-smoke {
+  opacity: 0.4;
+}
+.app-shell[data-scene="dashboard"] .door-smoke {
+  opacity: 0.1;
 }
 .site-header,
 .site-footer,
@@ -150,10 +154,31 @@ h2,
 .footer-scene {
   letter-spacing: 0.14em;
 }
-.site-footer > span:last-child {
+.footer-meta {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.footer-meta > span {
   font-size: 10px;
   color: #d6d5cb;
   text-shadow: 0 1px 8px #000;
+}
+.motion-toggle {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 10px 0 10px 8px;
+  border: 0;
+  background: transparent;
+  color: #b1b1aa;
+  font-size: 10px;
+}
+.motion-toggle span {
+  margin-left: 5px;
+  color: var(--foreground);
+}
+.motion-toggle:hover {
+  color: var(--foreground);
 }
 .form-scene {
   width: 100%;
@@ -797,16 +822,6 @@ textarea::placeholder {
     transform: translateY(0);
   }
 }
-@keyframes mist-drift {
-  from {
-    transform: translateX(-12px);
-    opacity: 0.08;
-  }
-  to {
-    transform: translateX(12px);
-    opacity: 0.14;
-  }
-}
 @media (max-width: 760px) {
   .site-header,
   .site-footer,
@@ -919,10 +934,18 @@ textarea::placeholder {
     font-size: 8px;
     gap: 16px;
   }
-  .site-footer > span:last-child {
+  .footer-meta {
+    gap: 10px;
+  }
+  .footer-meta > span {
     max-width: 160px;
     text-align: right;
     font-size: 8px;
+  }
+  .motion-toggle {
+    min-width: 44px;
+    padding-inline: 0;
+    font-size: 9px;
   }
   .scene-deadline .field-block {
     margin-top: 24px;
@@ -1029,8 +1052,8 @@ textarea::placeholder {
   .site-footer {
     gap: 8px;
   }
-  .site-footer > span:last-child {
-    max-width: 142px;
+  .footer-meta > span {
+    max-width: 122px;
   }
   .section-heading .section-label {
     font-size: 9px;
@@ -1057,6 +1080,10 @@ textarea::placeholder {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .door-smoke,
+  .motion-toggle {
+    display: none;
+  }
   *,
   *::before,
   *::after {
