@@ -21,6 +21,28 @@ function memoryStorage(): StoragePort & { values: Map<string, string> } {
   };
 }
 
+test("existing v1 data without a start date still restores; new periods are retained", () => {
+  const storage = memoryStorage();
+  const repo = createLocalRepository(() => storage);
+  const project = createProject(
+    {
+      name: "Simon",
+      title: "첫 작품",
+      description: "사진집",
+      releaseDate: "2026-11-01",
+      agreed: true,
+    },
+    new Date(2026, 9, 18),
+  );
+  delete project.startDate;
+  const legacy = { ...emptyState(), project };
+  storage.values.set(STORAGE_KEY, JSON.stringify(legacy));
+  assert.deepEqual(repo.load(), { ok: true, value: legacy });
+  project.startDate = "2026-10-22";
+  assert.ok(repo.save({ ...legacy, project }).ok);
+  assert.deepEqual(repo.load(), { ok: true, value: { ...legacy, project } });
+});
+
 test("draft and current scene restore after a fresh repository instance", () => {
   const storage = memoryStorage();
   const state = emptyState();

@@ -47,6 +47,10 @@ function validDraft(value: unknown): value is Draft {
     text(value.title, TITLE_LIMIT) &&
     text(value.description, DESCRIPTION_LIMIT) &&
     typeof value.agreed === "boolean" &&
+    (value.startDate === undefined ||
+      value.startDate === "" ||
+      (typeof value.startDate === "string" &&
+        parseLocalDate(value.startDate) !== null)) &&
     (value.releaseDate === "" ||
       (typeof value.releaseDate === "string" &&
         parseLocalDate(value.releaseDate) !== null))
@@ -71,6 +75,9 @@ function validProject(value: unknown): value is Project {
     !text(value.description, DESCRIPTION_LIMIT, true) ||
     typeof value.releaseDate !== "string" ||
     !parseLocalDate(value.releaseDate) ||
+    (value.startDate !== undefined &&
+      (typeof value.startDate !== "string" ||
+        !parseLocalDate(value.startDate))) ||
     !instant(value.startedAt) ||
     !instant(value.releaseAt) ||
     !instant(value.updatedAt) ||

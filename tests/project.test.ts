@@ -1,5 +1,31 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+
+test("period keeps the chosen start day and prevents a deadline before it", () => {
+  const now = new Date(2026, 9, 18, 12);
+  const draft = {
+    name: "Simon",
+    title: "사진집",
+    description: "매일 한 장",
+    startDate: "2026-10-22",
+    releaseDate: "2026-10-21",
+    agreed: true,
+  };
+  assert.equal(
+    validateStep("deadline", draft, now),
+    "종료일은 시작일과 같거나 이후여야 해요.",
+  );
+  assert.ok(
+    validateStep("deadline", { ...draft, startDate: "2026-10-17" }, now),
+  );
+  assert.equal(
+    validateStep("deadline", { ...draft, releaseDate: "2026-11-05" }, now),
+    null,
+  );
+  const project = createProject({ ...draft, releaseDate: "2026-11-05" }, now);
+  assert.equal(project.startDate, "2026-10-22");
+  assert.equal(projectStatus(project, now), "시작 예정 · 비공개");
+});
 import {
   createProject,
   dateAfter,

@@ -16,6 +16,7 @@ export interface Draft {
   name: string;
   title: string;
   description: string;
+  startDate?: string;
   releaseDate: string;
   agreed: boolean;
 }
@@ -32,6 +33,7 @@ export interface Project {
   title: string;
   description: string;
   startedAt: string;
+  startDate?: string;
   releaseDate: string;
   releaseAt: string;
   timeZone: string;
@@ -123,7 +125,18 @@ export function validateStep(
     if (draft.description.trim().length > DESCRIPTION_LIMIT)
       return `설명은 ${DESCRIPTION_LIMIT}자 이내로 입력해주세요.`;
   }
-  if (step === "deadline") return deadlineError(draft.releaseDate, now);
+  if (step === "deadline") {
+    if (draft.startDate) {
+      if (!parseLocalDate(draft.startDate))
+        return "올바른 시작일을 입력해주세요.";
+      if (daysUntil(draft.startDate, now) < 0)
+        return "시작일은 오늘 이후로 정해주세요.";
+    }
+    const error = deadlineError(draft.releaseDate, now);
+    if (error) return error;
+    if (draft.startDate && draft.releaseDate < draft.startDate)
+      return "종료일은 시작일과 같거나 이후여야 해요.";
+  }
   if (step === "agreement" && !draft.agreed)
     return "로컬 체험 안내를 확인하고 동의해주세요.";
   return null;
@@ -142,6 +155,7 @@ export function createProject(draft: Draft, now = new Date()): Project {
     title: draft.title.trim(),
     description: draft.description.trim(),
     startedAt: now.toISOString(),
+    startDate: draft.startDate || localDate(now),
     releaseDate: draft.releaseDate,
     releaseAt: release.toISOString(),
     timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -181,6 +195,8 @@ export function ddayLabel(days: number): string {
 export function projectStatus(project: Project, now = new Date()): string {
   if (now.getTime() >= new Date(project.releaseAt).getTime())
     return "예정일 지남 · 아직 비공개";
+  if (project.startDate && daysUntil(project.startDate, now) > 0)
+    return "시작 예정 · 비공개";
   if (daysUntil(localDate(new Date(project.releaseAt)), now) === 0)
     return "오늘이 예정일 · 비공개";
   return "창작 중 · 비공개";

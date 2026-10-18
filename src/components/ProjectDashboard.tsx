@@ -5,6 +5,7 @@ import {
   ddayLabel,
   DESCRIPTION_LIMIT,
   formatInstant,
+  formatDate,
   localDate,
   NOTE_LIMIT,
   projectStatus,
@@ -168,7 +169,11 @@ export function ProjectDashboard({
             </div>
             <div>
               <dt>시작일</dt>
-              <dd>{formatInstant(project.startedAt, project.timeZone)}</dd>
+              <dd>
+                {project.startDate
+                  ? formatDate(project.startDate)
+                  : formatInstant(project.startedAt, project.timeZone)}
+              </dd>
             </div>
             <div>
               <dt>공개 예정일</dt>

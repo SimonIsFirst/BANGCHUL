@@ -2,17 +2,19 @@
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
     "Noto Sans KR", "Malgun Gothic", sans-serif;
-  color: #f2f0e9;
+  color: #edede8;
   background: #0b0b0c;
   color-scheme: dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   --background: #0b0b0c;
-  --foreground: #f2f0e9;
-  --muted: #aaa9a5;
-  --quiet: #82827e;
-  --line: #303031;
+  --foreground: #edede8;
+  --muted: #8a8a8f;
+  --quiet: #8a8a8f;
+  --line: #343430;
+  --warm: #c8a477;
+  --serif: "Noto Serif KR", "Nanum Myeongjo", "Batang", "Georgia", serif;
   --error: #f3a69b;
 }
 * {
