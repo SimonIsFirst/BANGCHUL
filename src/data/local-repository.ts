@@ -6,6 +6,7 @@ import {
   parseLocalDate,
   STEPS,
   TITLE_LIMIT,
+  WORKSPACE_LIMIT,
 } from "../domain/project.ts";
 import type { Draft, LocalState, Note, Project } from "../domain/project.ts";
 
@@ -83,7 +84,9 @@ function validProject(value: unknown): value is Project {
     !instant(value.updatedAt) ||
     !text(value.timeZone, 100, true) ||
     !Array.isArray(value.notes) ||
-    !value.notes.every(validNote)
+    !value.notes.every(validNote) ||
+    (value.workspace !== undefined && !validWorkspace(value.workspace)) ||
+    (value.history !== undefined && !validHistory(value.history))
   )
     return false;
   try {
@@ -92,6 +95,17 @@ function validProject(value: unknown): value is Project {
     return false;
   }
   return true;
+}
+
+function validWorkspace(value: unknown): boolean {
+  return record(value) && text(value.content, WORKSPACE_LIMIT) && instant(value.updatedAt);
+}
+
+function validHistory(value: unknown): boolean {
+  return record(value) && Object.entries(value).every(([date, snapshot]) =>
+    parseLocalDate(date) !== null && record(snapshot) && snapshot.date === date &&
+    text(snapshot.content, WORKSPACE_LIMIT) && instant(snapshot.savedAt),
+  );
 }
 
 export function isLocalState(value: unknown): value is LocalState {

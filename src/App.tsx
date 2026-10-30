@@ -16,7 +16,10 @@ import { ResetDialog } from "./components/ResetDialog";
 import { OnboardingScene } from "./components/OnboardingScene";
 import { Arrow } from "./components/Arrow";
 import { DoorSmoke } from "./components/DoorSmoke";
+import { withWorkspaceContent } from "./domain/workspace";
+import type { SaveResult } from "./domain/autosave";
 import "./App.css";
+import "./workspace.css";
 
 const SCENE_NAMES = {
   opening: "OPENING",
@@ -37,6 +40,7 @@ function App() {
   const [state, setState] = useState<LocalState>(() =>
     initial.ok ? initial.value : emptyState(),
   );
+  const stateRef = useRef(state);
   const [blocked, setBlocked] = useState(!initial.ok);
   const [storageError, setStorageError] = useState(
     initial.ok ? "" : initial.error,
@@ -74,15 +78,19 @@ function App() {
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
+  function setCurrentState(next: LocalState) {
+    stateRef.current = next;
+    setState(next);
+  }
   function save(next: LocalState, keepInputOnFailure = false): boolean {
     if (blocked) return false;
     const result = repository.save(next);
     if (!result.ok) {
       setStorageError(result.error);
-      if (keepInputOnFailure) setState(next);
+      if (keepInputOnFailure) setCurrentState(next);
       return false;
     }
-    setState(next);
+    setCurrentState(next);
     setStorageError("");
     return true;
   }
@@ -127,7 +135,7 @@ function App() {
       setStorageError(result.error);
       return;
     }
-    setState(emptyState());
+    setCurrentState(emptyState());
     setBlocked(false);
     setStorageError("");
     setFieldError("");
@@ -141,15 +149,32 @@ function App() {
         setStorageError(result.error);
         return;
       }
-      setState(result.value);
+      setCurrentState(result.value);
       setBlocked(false);
       setStorageError("");
     } else if (save(state)) setNotice(experience.preview ? "미리보기 입력을 유지했어요. 새로고침하면 사라집니다." : "입력 내용을 이 브라우저에 저장했어요.");
   }
-  function updateProject(project: Project): boolean {
-    if (!save({ ...state, project })) return false;
+  function updateProject(change: (project: Project) => Project): boolean {
+    const latest = stateRef.current;
+    if (!latest.project || !save({ ...latest, project: change(latest.project) })) return false;
     setNotice(experience.preview ? "미리보기에 반영했어요. 입력은 저장되지 않습니다." : "변경 내용을 이 브라우저에 저장했어요.");
     return true;
+  }
+  function saveWorkspace(projectId: string, content: string): SaveResult {
+    const latest = stateRef.current;
+    if (blocked || !latest.project || latest.project.id !== projectId)
+      return { ok: false, error: "현재 프로젝트를 확인하지 못했어요. 본문을 내려받아 보관해주세요." };
+    let project: Project;
+    try { project = withWorkspaceContent(latest.project, content); }
+    catch { return { ok: false, error: "본문은 500,000자 이내로 작성해주세요." }; }
+    if (project !== latest.project) {
+      const next = { ...latest, project };
+      const result = repository.save(next);
+      if (!result.ok) return { ok: false, error: result.error };
+      setCurrentState(next);
+      setStorageError("");
+    }
+    return { ok: true, savedAt: project.workspace?.updatedAt ?? "" };
   }
   function goBack() {
     goTo(previousScene(state.step));
@@ -232,6 +257,7 @@ function App() {
             onReset={() => setResetOpen(true)}
             notice={notice}
             preview={experience.preview}
+            onSaveWorkspace={(content) => saveWorkspace(state.project!.id, content)}
           />
         ) : (
           <OnboardingScene
