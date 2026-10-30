@@ -2,6 +2,7 @@ export const NAME_LIMIT = 40;
 export const TITLE_LIMIT = 100;
 export const DESCRIPTION_LIMIT = 1000;
 export const NOTE_LIMIT = 2000;
+export const WORKSPACE_LIMIT = 500_000;
 
 export type Step = "name" | "title" | "description" | "transition" | "deadline" | "agreement";
 export const STEPS: readonly Step[] = [
@@ -40,6 +41,19 @@ export interface Project {
   timeZone: string;
   updatedAt: string;
   notes: Note[];
+  workspace?: CreativeWorkspace;
+  history?: Record<string, DailySnapshot>;
+}
+
+export interface CreativeWorkspace {
+  content: string;
+  updatedAt: string;
+}
+
+export interface DailySnapshot {
+  date: string;
+  content: string;
+  savedAt: string;
 }
 
 export interface LocalState {

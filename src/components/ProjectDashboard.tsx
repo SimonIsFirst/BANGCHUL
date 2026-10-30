@@ -11,12 +11,16 @@ import {
   projectStatus,
 } from "../domain/project";
 import type { Project } from "../domain/project";
+import type { SaveResult } from "../domain/autosave";
+import { WorkspaceEditor } from "./WorkspaceEditor";
+import { CalendarHistory } from "./CalendarHistory";
 
 interface Props {
   project: Project;
   now: Date;
   headingRef: RefObject<HTMLHeadingElement | null>;
-  onUpdate(project: Project): boolean;
+  onUpdate(change: (project: Project) => Project): boolean;
+  onSaveWorkspace(content: string): SaveResult;
   onReset(): void;
   notice: string;
   preview: boolean;
@@ -30,6 +34,7 @@ export function ProjectDashboard({
   onReset,
   notice,
   preview,
+  onSaveWorkspace,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [description, setDescription] = useState(project.description);
@@ -45,11 +50,11 @@ export function ProjectDashboard({
       return;
     }
     if (
-      onUpdate({
-        ...project,
+      onUpdate((current) => ({
+        ...current,
         description: description.trim(),
         updatedAt: new Date().toISOString(),
-      })
+      }))
     ) {
       setEditing(false);
       setDescriptionError("");
@@ -64,14 +69,14 @@ export function ProjectDashboard({
     }
     const timestamp = new Date().toISOString();
     if (
-      onUpdate({
-        ...project,
+      onUpdate((current) => ({
+        ...current,
         updatedAt: timestamp,
         notes: [
           { id: crypto.randomUUID(), text: note.trim(), createdAt: timestamp },
-          ...project.notes,
+          ...current.notes,
         ],
-      })
+      }))
     ) {
       setNote("");
       setNoteError("");
@@ -80,33 +85,27 @@ export function ProjectDashboard({
 
   return (
     <section className="scene dashboard-scene">
-      <div className="dashboard-intro">
-        <p className="eyebrow">YOUR FIRST RELEASE</p>
-        <h1 ref={headingRef} tabIndex={-1}>
-          첫 방출이 시작됐어요.
-        </h1>
-        <p className="scene-caption">
-          {project.name}님의 첫 작품, 이제 한 걸음씩 만들어가요.
-        </p>
-      </div>
-      <div className="project-overview">
+      <div className="workspace-project-header">
         <div className="project-identity">
-          <p className="section-label">THE PROJECT</p>
-          <h2>{project.title}</h2>
+          <p className="section-label">YOUR CREATIVE SPACE</p>
+          <h1 ref={headingRef} tabIndex={-1}>{project.title}</h1>
           <span className="project-state">
             <span className="status-dot" aria-hidden="true" />
             {projectStatus(project, now)}
           </span>
+          <a className="workspace-jump" href="#workspace-content">작업 이어쓰기 <span aria-hidden="true">↓</span></a>
         </div>
         <div className="countdown">
           <p className="section-label">공개 예정일까지</p>
           <strong>{ddayLabel(days)}</strong>
         </div>
       </div>
-      <div className="dashboard-columns">
-        <div className="project-details">
+      <div className="creative-dashboard-grid">
+        <WorkspaceEditor title={project.title} workspace={project.workspace} preview={preview} onSave={onSaveWorkspace} />
+        <CalendarHistory history={project.history} now={now} />
+        <section className="project-details" aria-labelledby="project-details-heading">
           <div className="section-heading">
-            <h3>작품 소개</h3>
+            <h2 id="project-details-heading">작품 소개</h2>
             {!editing && (
               <button
                 className="text-button"
@@ -162,7 +161,7 @@ export function ProjectDashboard({
               </div>
             </form>
           ) : (
-            <p className="project-description">{project.description}</p>
+            <p className="project-description" tabIndex={0}>{project.description}</p>
           )}
           <dl className="project-dates">
             <div>
@@ -189,11 +188,12 @@ export function ProjectDashboard({
             예정일이 지나도 자동으로 게시되지는 않아요.
             <br />{preview ? "디자인 미리보기의 입력은 저장되지 않으며 새로고침하면 사라집니다." : "이 프로젝트와 기록은 현재 브라우저에서만 볼 수 있어요."}
           </p>
-        </div>
-        <div className="project-journal">
+        </section>
+        <details className="legacy-notes">
+          <summary>진행 메모 <span>{project.notes.length}개</span></summary>
+          <p className="legacy-note-caption">이전 버전의 메모도 그대로 있어요. 메모와 작품 본문은 따로 보관됩니다.</p>
           <div className="section-heading">
-            <h3>오늘의 작은 진전</h3>
-            <span className="section-label">한 줄도 좋아요</span>
+            <h3>따로 남겨두는 메모</h3>
           </div>
           <form className="note-form" onSubmit={addNote} noValidate>
             <label className="sr-only" htmlFor="progress-note">
@@ -225,7 +225,7 @@ export function ProjectDashboard({
             </p>
           </form>
           <div className="journal-header">
-            <h3>나의 기록</h3>
+            <h3>메모 목록</h3>
             <span>{project.notes.length}</span>
           </div>
           {project.notes.length === 0 ? (
@@ -245,11 +245,11 @@ export function ProjectDashboard({
               ))}
             </ol>
           )}
-        </div>
+        </details>
       </div>
       <div className="dashboard-bottom">
         <p className="saved-notice" aria-hidden="true">
-          {notice || (preview ? "디자인 미리보기 · 저장되지 않음" : "이 브라우저에 저장됨")}
+          {notice || (preview ? "디자인 미리보기 · 저장되지 않음" : "프로젝트 · 비공개 로컬 체험")}
         </p>
         <button className="text-button reset-button" onClick={onReset}>
           프로젝트 초기화
