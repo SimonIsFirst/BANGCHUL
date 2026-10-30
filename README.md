@@ -1,32 +1,110 @@
-# React + TypeScript + Vite
+# BANGCHUL · 방출 MVP 1.1
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+생각만 하던 것을, 세상 밖으로.
 
-Currently, two official plugins are available:
+2026-10-30 v1.1: 첫 문구를 '시간이 끝나면, 당신의 작품은 공개됩니다.'로 변경하고, 바로 아래에 현재 자동 공개가 없는 로컬 체험임을 명시했습니다. 슬로건과 기존 빛/안개 배경을 유지하면서 이미지 유무 A/B 비교, 설명 뒤 전면 전환 장면을 추가했습니다. [디자인 기준](docs/art-direction.md)과 [v1.1 변경 내역](docs/v1.1-release.md)을 참고하세요. 아래의 로컬 체험 범위는 그대로 유지됩니다.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+이름, 작품 이름, 설명, 공개 예정일을 정하고 첫 창작 프로젝트를 시작하는 **브라우저 로컬 체험**입니다. 로그인 없이 입력할 수 있고, 프로젝트와 기록은 이 브라우저의 localStorage에만 저장됩니다. **예정일에 자동 게시되지 않으며 다른 사람에게 작품이나 입력 데이터가 공개되지 않습니다.**
 
-## React Compiler
+## 실행
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Node.js 24 이상을 사용합니다. 별도 DB, 환경 변수, API 키는 필요하지 않습니다.
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```powershell
+npm ci
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+표시된 로컬 주소를 브라우저에서 열면 됩니다. 배포용 빌드와 미리보기:
+
+```powershell
+npm run build
+npm run preview
+```
+
+`dist/index.html`을 파일로 더블클릭하는 방식은 지원하지 않습니다. Vite 미리보기 또는 정적 HTTP 호스팅을 사용하세요.
+
+## 구현 범위
+
+- 빛과 안개가 있는 검은 배경과 아이보리 타이포그래피, 공개 약속 중심 카피와 로컬 체험 범위 안내
+- 이름 → 작품 이름 → 설명 → 전환 장면 → 날짜 → 로컬 체험 동의 → 프로젝트 화면
+- 필수 입력, 공백 입력 검증, 이전/다음, 단일 입력 Enter 이동, 설명 입력의 줄바꿈
+- 시작일·종료일, 7/14/30일 선택, 과거 날짜/기간 역전 차단, 날짜·시간대·D-Day 표시
+- 설명 예시 `?`: 마우스 또는 키보드 포커스로 표시
+- 초안·현재 단계·프로젝트·설명 수정·진행 메모의 저장과 새로고침 복원
+- 저장 접근/용량 오류, 손상된 데이터와 지원하지 않는 버전 감지
+- 확인 창을 통한 이 앱 데이터만 초기화
+- 모바일 반응형, 입력 라벨, 오류 안내, 포커스, 본문 건너뛰기, reduced-motion
+
+이번 버전에는 로그인, 커뮤니티, 댓글, 파일 업로드, 전시, 서버 자동 공개, 알림, 결제, 오프라인 예약이 없습니다. 예정일이 지난 프로젝트는 `예정일 지남 · 아직 비공개`로 표시됩니다.
+
+## 디자인 A/B 비교
+
+일반 방문에는 기존 Cinematic Black을 사용합니다. 개발/디자인 검토에서만 URL 옵션을 사용합니다.
+
+- A: `/?design=minimal&preview=1` — 이미지와 연기를 렌더링하지 않는 Minimal Black
+- B: `/?design=cinematic&preview=1` — 기존 원본 이미지와 절제된 연기를 사용하는 Cinematic Black
+
+두 버전은 카피와 입력 흐름이 같습니다. `preview=1`은 기존 프로젝트를 읽거나 변경하지 않는 메모리 전용 미리보기입니다. 입력은 새로고침하면 사라지며 화면에 명시합니다. `preview=1` 없이 `design`만 지정하면 평소 로컬 저장 흐름을 그대로 이용합니다. URL 옵션은 공개 권한이나 자동 게시를 켜지 않습니다.
+
+## 구조
+
+| 경로 | 역할 |
+| --- | --- |
+| `src/App.tsx` | 온보딩 상태와 저장 결과 처리 |
+| `src/components/OnboardingScene.tsx` | 7개 장면, 전환, 기간, 동의 입력 |
+| `src/domain/experience.ts` | 화면 순서·이전/다음과 A/B 설정 |
+| `src/data/preview-repository.ts` | 실제 데이터를 건드리지 않는 검토용 메모리 저장소 |
+| `src/components/Arrow.tsx` | 일관된 화살표 아이콘 |
+| `src/components/ProjectDashboard.tsx` | 프로젝트 소개, 설명 수정, 진행 기록 |
+| `src/components/ResetDialog.tsx` | 확인과 포커스 관리가 있는 초기화 창 |
+| `src/domain/project.ts` | 타입, 입력 검증, 달력 날짜와 D-Day 계산 |
+| `src/data/local-repository.ts` | localStorage 어댑터와 읽기/저장/초기화 결과 |
+| `src/App.css`, `src/index.css` | 반응형 레이아웃, 타이포그래피, 접근성, 모션 |
+| `public/art/threshold.webp` | 직접 생성한 문틈 빛/안개 배경 |
+| `tests/` | 실제 날짜 경계와 저장 실패/복원 테스트 |
+| `.github/workflows/ci.yml` | PR과 main push의 검증 |
+| `wrangler.preview.jsonc` | 별도 Cloudflare 정적 프리뷰 설정 |
+
+서버 연결 시 `ProjectRepository` 포트에 비동기 서버 어댑터를 추가하고, 저장을 다루는 상태 계층을 비동기로 바꾸면 UI와 도메인 로직을 재사용할 수 있습니다.
+
+## 저장 규약과 한계
+
+키는 `bangchul:mvp:v1`, 데이터 구조는 `{ version: 1, draft, step, project }`입니다. 프로젝트에는 창작자, 작품 이름/설명, 시작 UTC 시각, 예정일, 예정일 23:59의 UTC 시각, 생성 당시 IANA 시간대, 수정 시각과 기록 배열을 저장합니다.
+
+v1.1은 저장 키나 버전을 바꾸지 않으며 기존 단계/프로젝트를 그대로 복원합니다. `step`에 입력 없는 `transition` 값을 추가했습니다. 이전에 날짜나 동의 화면까지 진행한 초안은 그 화면에서 이어지고, 처음부터 다시 시작시키지 않습니다.
+
+저장 성공 후에만 프로젝트 생성 완료/수정 완료를 알립니다. 손상되거나 다른 버전의 데이터를 발견하면 조용히 덮어쓰지 않고 재시도/확인 후 초기화를 제공합니다. 초기화는 위 키 하나만 지우며 예전 데모 키와 다른 서비스 저장 내용은 건드리지 않습니다.
+
+서로 다른 브라우저, 기기, 주소(개발 서버와 프리뷰 포함)는 데이터를 공유하지 않습니다. 브라우저 사이트 데이터를 지우면 작품 정보와 기록도 사라집니다. 하나의 브라우저에서 프로젝트 하나를 체험하는 범위이며 여러 탭에서 동시에 수정할 때는 마지막 저장이 반영됩니다.
+
+## 검증
+
+```powershell
+npm run typecheck
+npm test
+npm run build
+npm run lint
+```
+
+추가 테스트 라이브러리 없이 Node의 내장 테스트 러너를 사용합니다. 날짜의 연말·윤년·자정·서머타임 경계, 필수 동의, 초안/기록 복원, 손상/미지원 버전, 저장 권한/용량 오류, 앱 범위 초기화를 검증합니다. 실제 브라우저 점검 기록은 `docs/verification.md`를 참조하세요.
+
+## Cloudflare 프리뷰
+
+GitHub 원본은 `https://github.com/SimonIsFirst/BANGCHUL`입니다. 지시서에 적힌 `SimonsFirst`와 계정명이 달라 실제 접근 가능한 저장소를 사용했습니다. 이 저장소에는 기존 Cloudflare 배포 설정이 없었습니다. `wrangler.preview.jsonc`는 `bangchul-mvp-preview`라는 별도 Worker의 정적 자산만 배포합니다. 기존 사이트, 운영 도메인, DB, R2, Cron은 변경하지 않습니다.
+
+Cloudflare CLI를 사용할 수 있는 환경에서:
+
+```powershell
+npx wrangler login
+npm run build
+npx wrangler deploy --config wrangler.preview.jsonc
+```
+
+여러 계정이 있는 경우 배포 전에 대상 계정을 지정하세요. 이 작업에서 개인 Cloudflare 계정은 로그인되어 있지 않아 해당 계정의 배포는 실행하지 않았습니다. Cloudflare 로그인과 영구 호스팅 연결은 별도 단계입니다. 로컬 동작은 계정 연결 없이 사용할 수 있습니다.
+
+## 다음 개발 우선순위
+
+1. 사용자 테스트: 첫 프로젝트 생성 시간과 온보딩 이탈 구간을 확인하고 문구/입력 흐름을 개선.
+2. 영구 프리뷰 호스팅: 개인 Cloudflare 계정과 GitHub를 연결해 검증된 브랜치를 배포.
+3. 다음 제품 단계: 로그인/서버 저장과 동의 이력, 비공개 파일 보관, 서버 자동 공개를 함께 설계하고 구현.
