@@ -5,9 +5,10 @@ interface Props {
   onClose(): void;
   onConfirm(): void;
   error: string;
+  preview: boolean;
 }
 
-export function ResetDialog({ open, onClose, onConfirm, error }: Props) {
+export function ResetDialog({ open, onClose, onConfirm, error, preview }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current;
@@ -26,8 +27,7 @@ export function ResetDialog({ open, onClose, onConfirm, error }: Props) {
       <p className="eyebrow">START AGAIN</p>
       <h2 id="reset-title">처음부터 다시 시작할까요?</h2>
       <p id="reset-description">
-        이 브라우저에 저장된 프로젝트, 입력 내용과 진행 기록을 삭제해요. 삭제한
-        내용은 복구할 수 없어요.
+        {preview ? "현재 디자인 미리보기의 입력만 지웁니다. 기존에 저장된 프로젝트에는 영향을 주지 않아요." : "이 브라우저에 저장된 프로젝트, 입력 내용과 진행 기록을 삭제해요. 삭제한 내용은 복구할 수 없어요."}
       </p>
       <p className="field-error" role="alert">
         {error && error.includes("초기화하지") ? error : ""}

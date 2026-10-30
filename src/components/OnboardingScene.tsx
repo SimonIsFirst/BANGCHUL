@@ -17,6 +17,7 @@ const QUESTIONS: Record<Step, string> = {
   name: "당신의 이름은?",
   title: "무엇을\n방출하시겠습니까?",
   description: "어떤 작품인가요?",
+  transition: "이제, 세상에 내놓을 날짜를 정해볼까요?",
   deadline: "얼마 동안\n만들겠습니까?",
   agreement: "정해진 날, 세상 밖으로.",
 };
@@ -26,6 +27,7 @@ interface Props {
   draft: Draft;
   now: Date;
   error: string;
+  preview: boolean;
   headingRef: RefObject<HTMLHeadingElement | null>;
   onChange(patch: Partial<Draft>): void;
   onBack(): void;
@@ -39,6 +41,7 @@ export function OnboardingScene({
   draft,
   now,
   error,
+  preview,
   headingRef,
   onChange,
   onBack,
@@ -49,15 +52,37 @@ export function OnboardingScene({
   if (step === "opening")
     return (
       <section className="scene opening-scene">
-        <h1 className="opening-title" ref={headingRef} tabIndex={-1}>
-          <span>당신이 아직</span>
-          <span>끝내지 못한 것은</span>
-          <span>무엇입니까?</span>
+        <p className="opening-eyebrow">방출이 지향하는 약속</p>
+        <h1 className="opening-title" ref={headingRef} tabIndex={-1} aria-label="시간이 끝나면, 당신의 작품은 공개됩니다.">
+          <span>시간이 끝나면,</span>
+          <span>당신의 작품은<span className="headline-space"> </span><br className="headline-mobile-break" />공개됩니다.</span>
         </h1>
-        <p className="opening-caption">만드는 사람들의 방출</p>
-        <button className="opening-cta" onClick={onStart}>
-          시작하기 <Arrow />
-        </button>
+        <p className="opening-caption">생각만 하던 것을, 세상 밖으로.</p>
+        <div className="opening-actions">
+          <button className="opening-cta" onClick={onStart}>
+            첫 방출 시작하기 <Arrow />
+          </button>
+          <p className="opening-disclosure">
+            현재는 {preview ? "디자인 미리보기" : "로컬 체험"} 버전입니다.
+            <br />{preview ? "입력은 저장되지 않으며, 자동 공개되지 않습니다." : "등록 내용은 이 브라우저에만 저장되며, 자동 공개되지 않습니다."}
+          </p>
+        </div>
+      </section>
+    );
+
+  if (step === "transition")
+    return (
+      <section className="scene transition-scene">
+        <p className="eyebrow">이름과 작품, 설명까지 적었어요.</p>
+        <p className="transition-project">{draft.title}</p>
+        <h1 ref={headingRef} tabIndex={-1}>
+          이제, 세상에 내놓을<br />날짜를 정해볼까요?
+        </h1>
+        <p className="transition-caption">완벽한 계획보다, 시작할 날짜 하나.</p>
+        <form onSubmit={onSubmit} className="transition-actions">
+          <button type="submit" className="opening-cta">날짜 정하기 <Arrow /></button>
+          <button type="button" className="back-button" onClick={onBack}><span aria-hidden="true">←</span> 설명으로 돌아가기</button>
+        </form>
       </section>
     );
 
@@ -209,7 +234,7 @@ export function OnboardingScene({
               />
             </div>
             <div className="date-row">
-              <label htmlFor="release-date">종료일</label>
+              <label htmlFor="release-date">종료일 · 공개 예정일</label>
               <input
                 id="release-date"
                 type="date"
@@ -266,13 +291,13 @@ export function OnboardingScene({
             <p className="release-project-name">{draft.title}</p>
             <p className="agreement-zone">공개 예정일 · {zone} 기준</p>
             <div className="local-disclosure">
-              <p>현재는 로컬 체험 버전입니다.</p>
+              <p>{preview ? "현재는 디자인 미리보기입니다." : "현재는 로컬 체험 버전입니다."}</p>
               <p>
-                등록 내용은 이 브라우저에만 저장되며,
+                {preview ? "입력은 새로고침하면 사라지며," : "등록 내용은 이 브라우저에만 저장되며,"}
                 <br />
                 작품이 다른 사람에게 공개되지는 않습니다.
                 <br />
-                실제 자동 공개 기능은 향후 제공될 예정입니다.
+                실제 자동 공개 기능은 아직 제공되지 않습니다.
               </p>
             </div>
             <label className="agreement-checkbox">
@@ -283,9 +308,7 @@ export function OnboardingScene({
                 aria-describedby="field-error"
               />
               <span>
-                로컬 체험 안내를 확인했으며,
-                <br className="mobile-break" /> 이 브라우저에 저장하는 것에
-                동의합니다.
+                {preview ? "디자인 미리보기 안내를 확인했습니다." : <>로컬 체험 안내를 확인했으며,<br className="mobile-break" /> 이 브라우저에 저장하는 것에 동의합니다.</>}
               </span>
             </label>
           </div>

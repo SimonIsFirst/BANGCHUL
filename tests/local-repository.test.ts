@@ -56,6 +56,19 @@ test("draft and current scene restore after a fresh repository instance", () => 
   });
 });
 
+test("v1.1 transition restores the exact draft without clearing a legacy project or changing its key", () => {
+  const storage = memoryStorage();
+  const state = emptyState();
+  state.step = "transition";
+  state.draft = { name: "방출자", title: "세상 밖으로", description: "사진과 문장", releaseDate: "2026-11-30", agreed: false };
+  storage.values.set("another-app", "untouched");
+  const repo = createLocalRepository(() => storage);
+  assert.equal(STORAGE_KEY, "bangchul:mvp:v1");
+  assert.equal(repo.save(state).ok, true);
+  assert.deepEqual(createLocalRepository(() => storage).load(), { ok: true, value: state });
+  assert.equal(storage.values.get("another-app"), "untouched");
+});
+
 test("description changes and new notes persist with the project", () => {
   const storage = memoryStorage();
   const project = createProject(

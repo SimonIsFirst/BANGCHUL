@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { localRepository } from "./data/local-repository";
+import { createPreviewRepository } from "./data/preview-repository";
+import { nextScene, ONBOARDING_SCENES, previousScene, readExperience } from "./domain/experience";
 import {
   createProject,
   emptyState,
@@ -21,6 +23,7 @@ const SCENE_NAMES = {
   name: "NAME",
   title: "PROJECT",
   description: "DESCRIPTION",
+  transition: "NEXT CHAPTER",
   deadline: "PERIOD",
   agreement: "AGREEMENT",
   dashboard: "MY PROJECT",
@@ -28,7 +31,9 @@ const SCENE_NAMES = {
 };
 
 function App() {
-  const [initial] = useState(() => localRepository.load());
+  const [experience] = useState(() => readExperience(window.location.search));
+  const [repository] = useState(() => experience.preview ? createPreviewRepository() : localRepository);
+  const [initial] = useState(() => repository.load());
   const [state, setState] = useState<LocalState>(() =>
     initial.ok ? initial.value : emptyState(),
   );
@@ -47,8 +52,8 @@ function App() {
     : state.project
       ? "dashboard"
       : state.step;
-  const sceneNumber =
-    state.step === "opening" ? 1 : STEPS.indexOf(state.step) + 2;
+  const sceneNumber = ONBOARDING_SCENES.indexOf(state.step) + 1;
+  const sceneCount = ONBOARDING_SCENES.length;
 
   useEffect(() => {
     const refresh = () => setNow(new Date());
@@ -71,7 +76,7 @@ function App() {
 
   function save(next: LocalState, keepInputOnFailure = false): boolean {
     if (blocked) return false;
-    const result = localRepository.save(next);
+    const result = repository.save(next);
     if (!result.ok) {
       setStorageError(result.error);
       if (keepInputOnFailure) setState(next);
@@ -111,13 +116,13 @@ function App() {
         return;
       }
       if (save({ ...emptyState(), project: createProject(state.draft) }))
-        setNotice("프로젝트를 이 브라우저에 저장했어요.");
+        setNotice(experience.preview ? "미리보기 프로젝트를 만들었어요. 입력은 저장되지 않습니다." : "프로젝트를 이 브라우저에 저장했어요.");
       return;
     }
-    goTo(STEPS[STEPS.indexOf(state.step) + 1]);
+    goTo(nextScene(state.step));
   }
   function reset() {
-    const result = localRepository.clear();
+    const result = repository.clear();
     if (!result.ok) {
       setStorageError(result.error);
       return;
@@ -127,11 +132,11 @@ function App() {
     setStorageError("");
     setFieldError("");
     setResetOpen(false);
-    setNotice("이 브라우저의 방출 체험 데이터를 초기화했어요.");
+    setNotice(experience.preview ? "디자인 미리보기를 처음부터 시작합니다." : "이 브라우저의 방출 체험 데이터를 초기화했어요.");
   }
   function retryStorage() {
     if (blocked) {
-      const result = localRepository.load();
+      const result = repository.load();
       if (!result.ok) {
         setStorageError(result.error);
         return;
@@ -139,22 +144,23 @@ function App() {
       setState(result.value);
       setBlocked(false);
       setStorageError("");
-    } else if (save(state)) setNotice("입력 내용을 이 브라우저에 저장했어요.");
+    } else if (save(state)) setNotice(experience.preview ? "미리보기 입력을 유지했어요. 새로고침하면 사라집니다." : "입력 내용을 이 브라우저에 저장했어요.");
   }
   function updateProject(project: Project): boolean {
     if (!save({ ...state, project })) return false;
-    setNotice("변경 내용을 이 브라우저에 저장했어요.");
+    setNotice(experience.preview ? "미리보기에 반영했어요. 입력은 저장되지 않습니다." : "변경 내용을 이 브라우저에 저장했어요.");
     return true;
   }
   function goBack() {
-    const index = state.step === "opening" ? 0 : STEPS.indexOf(state.step);
-    goTo(index <= 0 ? "opening" : STEPS[index - 1]);
+    goTo(previousScene(state.step));
   }
 
   return (
-    <div className="app-shell" data-scene={scene}>
-      <div className="scene-backdrop" aria-hidden="true" />
-      <DoorSmoke paused={smokePaused} />
+    <div className="app-shell" data-scene={scene} data-design={experience.design}>
+      {experience.design === "cinematic" && <>
+        <div className="scene-backdrop" aria-hidden="true" />
+        <DoorSmoke paused={smokePaused} />
+      </>}
       <a className="skip-link" href="#main-content">
         본문으로 건너뛰기
       </a>
@@ -167,13 +173,17 @@ function App() {
         ) : (
           <span
             className="scene-number"
-            aria-label={`총 6개 화면 중 ${sceneNumber}번째 화면`}
+            aria-label={`총 ${sceneCount}개 화면 중 ${sceneNumber}번째 화면`}
           >
-            {String(sceneNumber).padStart(2, "0")} / 06{" "}
+            {String(sceneNumber).padStart(2, "0")} / {String(sceneCount).padStart(2, "0")}{" "}
             <span aria-hidden="true">—</span>
           </span>
         )}
       </header>
+      {experience.preview && <aside className="design-review-notice" aria-label="디자인 미리보기 안내">
+        <span>{experience.design === "minimal" ? "A · Minimal Black" : "B · Cinematic Black"}</span>
+        <p>디자인 미리보기 · 입력은 저장되지 않으며, 기존 프로젝트는 그대로 유지됩니다.</p>
+      </aside>}
       {storageError && !blocked && (
         <div className="storage-banner" role="alert">
           <p>{storageError}</p>
@@ -221,6 +231,7 @@ function App() {
             onUpdate={updateProject}
             onReset={() => setResetOpen(true)}
             notice={notice}
+            preview={experience.preview}
           />
         ) : (
           <OnboardingScene
@@ -235,6 +246,7 @@ function App() {
             onStart={() => goTo("name")}
             onSubmit={next}
             onValidate={setFieldError}
+            preview={experience.preview}
           />
         )}
       </main>
@@ -245,8 +257,8 @@ function App() {
             : `${String(sceneNumber).padStart(2, "0")}. ${SCENE_NAMES[scene]}`}
         </span>
         <div className="footer-meta">
-          <span>로컬 체험 · 이 브라우저에만 저장됩니다.</span>
-          <button
+          <span>{experience.preview ? "디자인 검토 · 입력은 저장되지 않습니다." : "로컬 체험 · 이 브라우저에만 저장됩니다."}</span>
+          {experience.design === "cinematic" && <button
             type="button"
             className="motion-toggle"
             aria-label="배경 연기 애니메이션"
@@ -254,7 +266,7 @@ function App() {
             onClick={() => setSmokePaused((value) => !value)}
           >
             모션 <span aria-hidden="true">{smokePaused ? "끔" : "켬"}</span>
-          </button>
+          </button>}
         </div>
       </footer>
       <ResetDialog
@@ -262,6 +274,7 @@ function App() {
         onClose={() => setResetOpen(false)}
         onConfirm={reset}
         error={storageError}
+        preview={experience.preview}
       />
     </div>
   );

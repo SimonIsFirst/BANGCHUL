@@ -3,11 +3,12 @@ export const TITLE_LIMIT = 100;
 export const DESCRIPTION_LIMIT = 1000;
 export const NOTE_LIMIT = 2000;
 
-export type Step = "name" | "title" | "description" | "deadline" | "agreement";
+export type Step = "name" | "title" | "description" | "transition" | "deadline" | "agreement";
 export const STEPS: readonly Step[] = [
   "name",
   "title",
   "description",
+  "transition",
   "deadline",
   "agreement",
 ];
@@ -138,7 +139,7 @@ export function validateStep(
       return "종료일은 시작일과 같거나 이후여야 해요.";
   }
   if (step === "agreement" && !draft.agreed)
-    return "로컬 체험 안내를 확인하고 동의해주세요.";
+    return "안내를 확인하고 동의해주세요.";
   return null;
 }
 

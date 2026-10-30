@@ -19,6 +19,7 @@ interface Props {
   onUpdate(project: Project): boolean;
   onReset(): void;
   notice: string;
+  preview: boolean;
 }
 
 export function ProjectDashboard({
@@ -28,6 +29,7 @@ export function ProjectDashboard({
   onUpdate,
   onReset,
   notice,
+  preview,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [description, setDescription] = useState(project.description);
@@ -185,7 +187,7 @@ export function ProjectDashboard({
           </dl>
           <p className="privacy-note">
             예정일이 지나도 자동으로 게시되지는 않아요.
-            <br />이 프로젝트와 기록은 현재 브라우저에서만 볼 수 있어요.
+            <br />{preview ? "디자인 미리보기의 입력은 저장되지 않으며 새로고침하면 사라집니다." : "이 프로젝트와 기록은 현재 브라우저에서만 볼 수 있어요."}
           </p>
         </div>
         <div className="project-journal">
@@ -247,7 +249,7 @@ export function ProjectDashboard({
       </div>
       <div className="dashboard-bottom">
         <p className="saved-notice" aria-hidden="true">
-          {notice || "이 브라우저에 저장됨"}
+          {notice || (preview ? "디자인 미리보기 · 저장되지 않음" : "이 브라우저에 저장됨")}
         </p>
         <button className="text-button reset-button" onClick={onReset}>
           프로젝트 초기화
