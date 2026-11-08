@@ -3,6 +3,31 @@ export const TITLE_LIMIT = 100;
 export const DESCRIPTION_LIMIT = 1000;
 export const NOTE_LIMIT = 2000;
 export const WORKSPACE_LIMIT = 500_000;
+export type CreativeKind = "writing" | "visual" | "music";
+export interface MediaVersion {
+  id: string;
+  projectId: string;
+  kind: "visual" | "music";
+  filename: string;
+  mime: "image/jpeg" | "image/png" | "audio/mpeg";
+  size: number;
+  storedBytes?: number;
+  sha256: string;
+  originalKey: string;
+  previewKey?: string;
+  thumbnailKey?: string;
+  createdAt: string;
+}
+export interface RestorePoint { id: string; content: string; savedAt: string }
+export interface ReleaseArtifact {
+  id: string;
+  versionId?: string;
+  status: "private";
+  releaseAt: string;
+  timeZone: string;
+  autoReleaseConsent: false;
+  salesEnabled: false;
+}
 
 export type Step = "name" | "title" | "description" | "transition" | "deadline" | "agreement";
 export const STEPS: readonly Step[] = [
@@ -15,6 +40,7 @@ export const STEPS: readonly Step[] = [
 ];
 
 export interface Draft {
+  kind?: CreativeKind;
   name: string;
   title: string;
   description: string;
@@ -30,6 +56,12 @@ export interface Note {
 }
 
 export interface Project {
+  kind?: CreativeKind;
+  mediaVersions?: MediaVersion[];
+  currentVersionId?: string;
+  mediaHistory?: Record<string, string>;
+  restorePoints?: RestorePoint[];
+  releaseArtifact?: ReleaseArtifact;
   id: string;
   name: string;
   title: string;
@@ -166,6 +198,7 @@ export function createProject(draft: Draft, now = new Date()): Project {
   release.setHours(23, 59, 0, 0);
   return {
     id: crypto.randomUUID(),
+    kind: draft.kind ?? "writing",
     name: draft.name.trim(),
     title: draft.title.trim(),
     description: draft.description.trim(),

@@ -8,10 +8,11 @@ interface Props {
   title: string;
   workspace?: CreativeWorkspace;
   preview: boolean;
+  cloud?: boolean;
   onSave(content: string): SaveResult;
 }
 
-export function WorkspaceEditor({ title, workspace, preview, onSave }: Props) {
+export function WorkspaceEditor({ title, workspace, preview, cloud, onSave }: Props) {
   const [content, setContent] = useState(workspace?.content ?? "");
   const [status, setStatus] = useState<SaveStatus>({
     kind: workspace ? "saved" : "idle", savedAt: workspace?.updatedAt ?? "",
@@ -64,7 +65,7 @@ export function WorkspaceEditor({ title, workspace, preview, onSave }: Props) {
 
   const statusText = status.kind === "pending" ? "저장 중…"
     : status.kind === "error" ? "저장하지 못했어요"
-    : status.kind === "saved" ? (preview ? "미리보기에 반영됨 · 저장되지 않음" : "이 브라우저에 저장됨")
+    : status.kind === "saved" ? (preview ? "미리보기에 반영됨 · 저장되지 않음" : cloud ? "기기에 임시 보관됨 · 서버 상태는 상단에서 확인" : "이 브라우저에 저장됨")
     : "첫 문장부터 시작해보세요";
 
   return (
@@ -106,7 +107,7 @@ export function WorkspaceEditor({ title, workspace, preview, onSave }: Props) {
         <button type="button" className="small-button" onClick={() => controller.flush()}>본문 저장 다시 시도</button>
       </div>}
       <p className="workspace-storage-note" id="workspace-storage-note">
-        {preview ? "디자인 미리보기입니다. 입력은 새로고침하면 사라집니다." : "이 브라우저에만 저장됩니다. 다른 기기와 동기화되지 않으며, 브라우저 데이터를 지우면 사라질 수 있어요."}
+        {preview ? "디자인 미리보기입니다. 입력은 새로고침하면 사라집니다." : cloud ? "기기에 임시 보관한 뒤 계정에 저장해요. 상단에 ‘서버 저장됨’이 표시되면 다른 기기에서도 이어갈 수 있어요." : "이 브라우저에만 저장됩니다. 다른 기기에서는 계정 연결이 필요하며, 브라우저 데이터를 지우면 사라질 수 있어요."}
         <br />예정일이 지나도 자동으로 공개되지 않습니다.
       </p>
     </section>

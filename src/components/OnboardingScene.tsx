@@ -28,6 +28,7 @@ interface Props {
   now: Date;
   error: string;
   preview: boolean;
+  cloud?: boolean;
   headingRef: RefObject<HTMLHeadingElement | null>;
   onChange(patch: Partial<Draft>): void;
   onBack(): void;
@@ -42,6 +43,7 @@ export function OnboardingScene({
   now,
   error,
   preview,
+  cloud = false,
   headingRef,
   onChange,
   onBack,
@@ -63,8 +65,8 @@ export function OnboardingScene({
             첫 방출 시작하기 <Arrow />
           </button>
           <p className="opening-disclosure">
-            현재는 {preview ? "디자인 미리보기" : "로컬 체험"} 버전입니다.
-            <br />{preview ? "입력은 저장되지 않으며, 자동 공개되지 않습니다." : "등록 내용은 이 브라우저에만 저장되며, 자동 공개되지 않습니다."}
+            {preview ? "디자인 미리보기" : cloud ? "계정의 비공개 작업 공간" : "로그인 없이 시작하는 로컬 작업 공간"}
+            <br />{preview ? "입력은 저장되지 않으며, 자동 공개되지 않습니다." : cloud ? "계정에 저장되며, 자동 공개되지 않습니다." : "이 브라우저에 저장됩니다. 계정에 연결하면 다른 기기에서도 이어갈 수 있어요."}
           </p>
         </div>
       </section>
@@ -185,6 +187,11 @@ export function OnboardingScene({
             <p className="field-hint" id="field-hint">
               단편소설, 사진집, 음악. 무엇이든 좋아요.
             </p>
+            <fieldset className="creative-kind-picker"><legend>어떤 방식으로 만드나요?</legend>{([
+              ["writing", "글", "문장과 이야기"], ["visual", "그림", "이미지와 장면"], ["music", "음악", "소리와 멜로디"],
+            ] as const).map(([kind, label, caption]) => <label key={kind} data-selected={(draft.kind ?? "writing") === kind}>
+              <input type="radio" name="creative-kind" value={kind} checked={(draft.kind ?? "writing") === kind} onChange={() => onChange({ kind })} /><strong>{label}</strong><span>{caption}</span>
+            </label>)}</fieldset>
           </div>
         )}
         {step === "description" && (
@@ -291,9 +298,9 @@ export function OnboardingScene({
             <p className="release-project-name">{draft.title}</p>
             <p className="agreement-zone">공개 예정일 · {zone} 기준</p>
             <div className="local-disclosure">
-              <p>{preview ? "현재는 디자인 미리보기입니다." : "현재는 로컬 체험 버전입니다."}</p>
+              <p>{preview ? "현재는 디자인 미리보기입니다." : cloud ? "계정의 비공개 작업 공간입니다." : "현재는 이 브라우저에 저장합니다."}</p>
               <p>
-                {preview ? "입력은 새로고침하면 사라지며," : "등록 내용은 이 브라우저에만 저장되며,"}
+                {preview ? "입력은 새로고침하면 사라지며," : cloud ? "등록 내용은 계정에 비공개로 저장되며," : "등록 내용은 이 브라우저에만 저장되며,"}
                 <br />
                 작품이 다른 사람에게 공개되지는 않습니다.
                 <br />
@@ -308,7 +315,7 @@ export function OnboardingScene({
                 aria-describedby="field-error"
               />
               <span>
-                {preview ? "디자인 미리보기 안내를 확인했습니다." : <>로컬 체험 안내를 확인했으며,<br className="mobile-break" /> 이 브라우저에 저장하는 것에 동의합니다.</>}
+                {preview ? "디자인 미리보기 안내를 확인했습니다." : <>{cloud ? "계정 비공개 저장" : "브라우저 저장"} 안내를 확인했으며,<br className="mobile-break" /> 저장하는 것에 동의합니다.</>}
               </span>
             </label>
           </div>

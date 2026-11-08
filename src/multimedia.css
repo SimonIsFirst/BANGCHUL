@@ -1,0 +1,80 @@
+.creative-kind-picker { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; padding:0; margin:38px 0 0; border:0; }
+.creative-kind-picker legend { margin-bottom:16px; font-size:12px; color:var(--muted); }
+.creative-kind-picker label { position:relative; display:flex; flex-direction:column; align-items:flex-start; gap:10px; min-height:108px; padding:18px; border:1px solid var(--line); border-radius:4px; background:#121213c9; cursor:pointer; }
+.creative-kind-picker label[data-selected=true] { border-color:var(--warm); background:#221e18d9; }
+.creative-kind-picker input { position:absolute; right:14px; top:16px; accent-color:var(--warm); }
+.creative-kind-picker strong { font-size:17px; font-weight:450; }
+.creative-kind-picker span { font-size:10px; line-height:1.7; color:#aba89f; }
+.account-controls { margin-left:auto; margin-right:26px; display:flex; align-items:center; gap:14px; }
+.account-menu { position:relative; }
+.account-menu summary { list-style:none; min-height:44px; display:flex; align-items:center; color:#d0c8b9; font-size:11px; cursor:pointer; gap:8px; }
+.account-menu summary::-webkit-details-marker { display:none; }
+.account-menu summary:focus-visible { outline:2px solid var(--foreground); outline-offset:3px; }
+.account-popover { position:absolute; z-index:25; right:0; top:100%; width:340px; max-width:calc(100vw - 36px); padding:26px; border:1px solid #575349; border-radius:8px; background:#141415; box-shadow:0 20px 80px #000a; display:flex; flex-direction:column; align-items:flex-start; gap:16px; }
+.account-popover h2 { font-family:var(--serif); font-size:24px; font-weight:300; line-height:1.6; }
+.account-popover p { font-size:12px; line-height:1.9; color:#bbb7ac; overflow-wrap:anywhere; }
+.account-popover .section-label, .account-popover .account-provider-note { font-size:10px; color:#93938a; }
+.account-popover .small-button { text-decoration:none; text-align:left; line-height:1.8; }
+.account-popover .text-button { padding-block:4px; text-align:left; }
+.account-popover .account-display-name { color:var(--foreground); }
+.cloud-state { font-size:10px; color:#b1ba9f; }
+.cloud-state[data-status=pending] { color:var(--warm); }
+.cloud-state[data-status=error] { color:var(--error); }
+.media-empty { min-height:300px; border:1px dashed #59564d; border-radius:4px; background:#111112b8; display:flex; flex-direction:column; justify-content:center; align-items:center; gap:14px; text-align:center; padding:28px; }
+.media-empty > span { font-size:42px; font-weight:200; color:var(--warm); }
+.media-empty p { font-family:var(--serif); font-size:25px; }
+.media-empty small { color:var(--muted); line-height:1.8; }
+.current-media { background:#111112c9; border:1px solid #45443d; border-radius:4px; overflow:hidden; }
+.art-preview { position:relative; display:block; width:100%; border:0; background:#171719; color:var(--foreground); padding:0; min-height:130px; cursor:zoom-in; }
+.art-preview img { display:block; width:100%; height:auto; max-height:540px; object-fit:contain; }
+.art-preview span { position:absolute; right:12px; bottom:12px; padding:8px 12px; background:#111d; border-radius:3px; font-size:11px; }
+.art-dialog { width:min(94vw,1300px); max-width:94vw; max-height:92svh; background:#151516; color:var(--foreground); border:1px solid var(--line); padding:16px; border-radius:5px; }
+.art-dialog::backdrop { background:#000d; }
+.art-dialog > button { display:block; margin:0 0 14px auto; }
+.art-dialog img { display:block; width:100%; max-height:76svh; object-fit:contain; }
+.music-player { display:block; width:calc(100% - 48px); margin:44px 24px; }
+.media-meta { padding:18px 22px; border-top:1px solid var(--line); }
+.media-meta span { font-size:10px; color:var(--warm); }
+.media-meta p { font-size:13px; color:#d1cfc3; line-height:1.9; margin-top:8px; overflow-wrap:anywhere; }
+.file-uploader { padding:26px 0 18px; }
+.file-uploader label { display:block; margin-bottom:14px; font-size:13px; }
+.file-uploader input { display:block; width:100%; font-size:12px; line-height:1.8; color:#aba99e; }
+.file-uploader input::file-selector-button { font:inherit; min-height:44px; margin-right:16px; border:1px solid #6f685a; border-radius:3px; padding:10px 18px; background:#dedace; color:#141414; cursor:pointer; }
+.file-uploader .field-hint { margin-top:10px; }
+.upload-status { min-height:24px; padding-top:10px; font-size:12px; color:#c7b393; line-height:1.8; }
+.media-version-list { margin-top:24px; border-top:1px solid var(--line); }
+.media-version-list summary { min-height:52px; padding-top:18px; font-size:12px; color:#c7c4b7; cursor:pointer; }
+.media-version-list summary span { color:var(--muted); margin-left:10px; }
+.media-version-list ol { list-style:none; margin:0; padding:0; }
+.media-version-list li { display:flex; justify-content:space-between; gap:20px; align-items:center; padding:16px 0; border-bottom:1px solid var(--line); }
+.media-version-list li span { font-size:10px; color:var(--muted); }
+.media-version-list li p { font-size:12px; line-height:1.8; overflow-wrap:anywhere; }
+.version-thumbnail { width:48px; height:48px; object-fit:cover; border-radius:3px; flex-shrink:0; }
+.version-description { flex:1; min-width:0; }
+.historical-media { margin-top:20px; padding:18px; border:1px solid var(--line); border-radius:4px; }
+.historical-media .art-preview { margin-block:14px; }
+.restore-confirm { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:18px; margin-top:14px; border:1px solid #706147; border-radius:4px; background:#1d1a15; }
+.restore-confirm p { width:100%; font-size:12px; line-height:1.9; color:#ded6c6; }
+.calendar-history .art-preview img { max-height:220px; }
+.calendar-history .music-player { margin:18px 0; width:100%; }
+.creative-dashboard-grid { grid-template-areas:"details history" "workspace workspace" "backups backups" "legacy legacy"; }
+.restore-backups { grid-area:backups; border-top:1px solid var(--line); padding-top:16px; min-width:0; }
+.restore-backups summary { cursor:pointer; font-size:12px; padding-block:14px; }
+.restore-backups > button { display:block; }
+@media(max-width:760px) {
+  .creative-dashboard-grid { grid-template-areas:"workspace" "history" "details" "backups" "legacy"; }
+  .account-controls { margin-right:0; gap:8px; }
+  .account-controls + .header-label, .account-controls + .scene-number { display:none; }
+  .account-popover { right:-4px; width:min(340px,calc(100vw - 40px)); padding:22px; }
+  .cloud-state { max-width:65px; font-size:9px; line-height:1.6; }
+  .creative-kind-picker { gap:7px; margin-top:26px; }
+  .creative-kind-picker label { padding:16px 10px; min-height:100px; }
+  .creative-kind-picker input { right:8px; top:10px; width:12px; }
+  .creative-kind-picker strong { font-size:15px; }
+  .creative-kind-picker span { font-size:9px; }
+  .media-empty { min-height:260px; }
+  .media-empty p { font-size:23px; }
+  .media-meta { padding:16px; }
+  .file-uploader input { font-size:11px; }
+  .file-uploader input::file-selector-button { padding:10px 14px; margin-right:10px; }
+}

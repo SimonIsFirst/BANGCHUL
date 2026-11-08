@@ -44,6 +44,7 @@ function instant(value: unknown): value is string {
 function validDraft(value: unknown): value is Draft {
   return (
     record(value) &&
+    (value.kind === undefined || ["writing", "visual", "music"].includes(String(value.kind))) &&
     text(value.name, NAME_LIMIT) &&
     text(value.title, TITLE_LIMIT) &&
     text(value.description, DESCRIPTION_LIMIT) &&
@@ -67,9 +68,10 @@ function validNote(value: unknown): value is Note {
   );
 }
 
-function validProject(value: unknown): value is Project {
+export function validProject(value: unknown): value is Project {
   if (
     !record(value) ||
+    (value.kind !== undefined && !["writing", "visual", "music"].includes(String(value.kind))) ||
     !text(value.id, 100, true) ||
     !text(value.name, NAME_LIMIT, true) ||
     !text(value.title, TITLE_LIMIT, true) ||
@@ -86,13 +88,38 @@ function validProject(value: unknown): value is Project {
     !Array.isArray(value.notes) ||
     !value.notes.every(validNote) ||
     (value.workspace !== undefined && !validWorkspace(value.workspace)) ||
-    (value.history !== undefined && !validHistory(value.history))
+    (value.history !== undefined && !validHistory(value.history)) ||
+    !validMediaFields(value)
   )
     return false;
   try {
     new Intl.DateTimeFormat("ko-KR", { timeZone: value.timeZone });
   } catch {
     return false;
+  }
+  return true;
+}
+
+function validMediaFields(value: Record<string, unknown>): boolean {
+  const versions = value.mediaVersions;
+  if (versions !== undefined && (!Array.isArray(versions) || versions.length > 50 || !versions.every((v) =>
+    record(v) && text(v.id, 100, true) && v.projectId === value.id && ["visual", "music"].includes(String(v.kind)) &&
+    v.kind === value.kind && text(v.filename, 255, true) && ["image/jpeg", "image/png", "audio/mpeg"].includes(String(v.mime)) &&
+    typeof v.size === "number" && v.size > 0 && v.size <= 20 * 1024 * 1024 &&
+    (v.storedBytes === undefined || (typeof v.storedBytes === "number" && v.storedBytes >= v.size && v.storedBytes <= 23 * 1024 * 1024)) &&
+    typeof v.sha256 === "string" && /^[a-f0-9]{64}$/.test(v.sha256) && text(v.originalKey, 300, true) &&
+    (v.previewKey === undefined || text(v.previewKey, 300, true)) &&
+    (v.thumbnailKey === undefined || text(v.thumbnailKey, 300, true)) && instant(v.createdAt)))) return false;
+  const ids = new Set(Array.isArray(versions) ? versions.map((v) => v.id) : []);
+  if (value.currentVersionId !== undefined && !ids.has(value.currentVersionId)) return false;
+  if (value.mediaHistory !== undefined && (!record(value.mediaHistory) || !Object.entries(value.mediaHistory).every(([date, id]) =>
+    parseLocalDate(date) !== null && ids.has(id)))) return false;
+  if (value.restorePoints !== undefined && (!Array.isArray(value.restorePoints) || !value.restorePoints.every((v) =>
+    record(v) && text(v.id, 100, true) && text(v.content, WORKSPACE_LIMIT) && instant(v.savedAt)))) return false;
+  if (value.releaseArtifact !== undefined) {
+    const a = value.releaseArtifact;
+    if (!record(a) || !text(a.id, 100, true) || a.status !== "private" || a.autoReleaseConsent !== false || a.salesEnabled !== false ||
+      !instant(a.releaseAt) || !text(a.timeZone, 100, true) || (a.versionId !== undefined && !ids.has(a.versionId))) return false;
   }
   return true;
 }
@@ -123,12 +150,13 @@ export function isLocalState(value: unknown): value is LocalState {
 /** All browser persistence stays behind this port for a later server adapter. */
 export function createLocalRepository(
   getStorage: () => StoragePort,
+  storageKey = STORAGE_KEY,
 ): ProjectRepository {
   return {
     load() {
       let raw: string | null;
       try {
-        raw = getStorage().getItem(STORAGE_KEY);
+        raw = getStorage().getItem(storageKey);
       } catch {
         return {
           ok: false,
@@ -152,7 +180,7 @@ export function createLocalRepository(
     },
     save(state) {
       try {
-        getStorage().setItem(STORAGE_KEY, JSON.stringify(state));
+        getStorage().setItem(storageKey, JSON.stringify(state));
         return { ok: true, value: undefined };
       } catch {
         return {
@@ -164,7 +192,7 @@ export function createLocalRepository(
     },
     clear() {
       try {
-        getStorage().removeItem(STORAGE_KEY);
+        getStorage().removeItem(storageKey);
         return { ok: true, value: undefined };
       } catch {
         return {
@@ -177,4 +205,4 @@ export function createLocalRepository(
   };
 }
 
-export const localRepository = createLocalRepository(() => window.localStorage);
+export const localRepository = createLocalRepository(() => (globalThis as unknown as { localStorage: StoragePort }).localStorage);
