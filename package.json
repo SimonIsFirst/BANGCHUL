@@ -1,30 +1,39 @@
 {
   "name": "bangchul",
   "private": true,
-  "version": "1.2.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "typecheck": "tsc -b --pretty false",
+    "build": "npm run typecheck && vite build && node scripts/build-worker.mjs",
+    "typecheck": "tsc -b --pretty false && tsc -p tsconfig.worker.json",
     "test": "node --test tests/*.test.ts",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:api": "wrangler dev --config wrangler.local.jsonc --local --port 8788 --ip 127.0.0.1 --inspector-port 0",
+    "db:generate": "drizzle-kit generate",
+    "db:local": "wrangler d1 migrations apply DB --config wrangler.local.jsonc --local"
   },
   "engines": {
     "node": ">=24.0.0"
   },
+  "overrides": { "esbuild": "$esbuild" },
   "dependencies": {
+    "drizzle-orm": "^0.45.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261108.1",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "@vitejs/plugin-react": "^6.1.0",
+    "drizzle-kit": "^0.31.10",
+    "esbuild": "^0.28.2",
     "oxlint": "^1.79.0",
     "typescript": "~6.0.2",
-    "vite": "^8.2.2"
+    "vite": "^8.3.6",
+    "wrangler": "^4.158.0"
   }
 }

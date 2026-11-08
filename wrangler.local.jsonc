@@ -1,0 +1,9 @@
+{
+  "name": "bangchul-v2-local",
+  "main": "dist/server/index.js",
+  "compatibility_date": "2026-05-15",
+  "workers_dev": false,
+  "vars": { "IDENTITY_PROVIDER": "disabled" },
+  "d1_databases": [{ "binding": "DB", "database_name": "bangchul-local", "database_id": "00000000-0000-4000-8000-000000000000", "migrations_dir": "drizzle" }],
+  "r2_buckets": [{ "binding": "BUCKET", "bucket_name": "bangchul-private-local" }]
+}

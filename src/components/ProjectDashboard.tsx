@@ -14,6 +14,10 @@ import type { Project } from "../domain/project";
 import type { SaveResult } from "../domain/autosave";
 import { WorkspaceEditor } from "./WorkspaceEditor";
 import { CalendarHistory } from "./CalendarHistory";
+import { MusicWorkspace, VisualWorkspace } from "./MediaWorkspace";
+import type { CloudUpload } from "./MediaWorkspace";
+import { KIND_LABELS } from "../domain/media";
+import { restoreWriting } from "../domain/restore";
 
 interface Props {
   project: Project;
@@ -24,6 +28,8 @@ interface Props {
   onReset(): void;
   notice: string;
   preview: boolean;
+  cloudUpload?: CloudUpload;
+  cloud?: boolean;
 }
 
 export function ProjectDashboard({
@@ -35,12 +41,17 @@ export function ProjectDashboard({
   notice,
   preview,
   onSaveWorkspace,
+  cloudUpload,
+  cloud = false,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [description, setDescription] = useState(project.description);
   const [descriptionError, setDescriptionError] = useState("");
   const [note, setNote] = useState("");
   const [noteError, setNoteError] = useState("");
+  const [backupId, setBackupId] = useState<string | null>(null);
+  const [confirmBackup, setConfirmBackup] = useState(false);
+  const backup = project.restorePoints?.find((item) => item.id === backupId);
   const days = daysUntil(localDate(new Date(project.releaseAt)), now);
 
   function saveDescription(event: FormEvent) {
@@ -93,7 +104,7 @@ export function ProjectDashboard({
             <span className="status-dot" aria-hidden="true" />
             {projectStatus(project, now)}
           </span>
-          <a className="workspace-jump" href="#workspace-content">작업 이어쓰기 <span aria-hidden="true">↓</span></a>
+          <a className="workspace-jump" href="#workspace-content">{KIND_LABELS[project.kind ?? "writing"]} 작업 이어가기 <span aria-hidden="true">↓</span></a>
         </div>
         <div className="countdown">
           <p className="section-label">공개 예정일까지</p>
@@ -101,8 +112,16 @@ export function ProjectDashboard({
         </div>
       </div>
       <div className="creative-dashboard-grid">
-        <WorkspaceEditor title={project.title} workspace={project.workspace} preview={preview} onSave={onSaveWorkspace} />
-        <CalendarHistory history={project.history} now={now} />
+        {project.kind === "visual" ? <VisualWorkspace project={project} onUpdate={onUpdate} preview={preview} cloudUpload={cloudUpload} />
+          : project.kind === "music" ? <MusicWorkspace project={project} onUpdate={onUpdate} preview={preview} cloudUpload={cloudUpload} />
+          : <WorkspaceEditor key={project.workspace?.updatedAt && project.restorePoints?.length ? `restored-${project.restorePoints.length}` : "writing"} title={project.title} workspace={project.workspace} preview={preview} cloud={cloud} onSave={onSaveWorkspace} />}
+        <CalendarHistory project={project} history={project.history} now={now} onUpdate={onUpdate} cloud={cloud} />
+        {!!project.restorePoints?.length && <details className="restore-backups"><summary>복원 전 보호한 원고 · {project.restorePoints.length}개</summary>
+          <p className="field-hint">복원하기 직전의 원고를 따로 보관했어요.</p>
+          {[...project.restorePoints].reverse().map((point) => <button key={point.id} type="button" className="text-button" onClick={() => { setBackupId(point.id); setConfirmBackup(false); }}>{formatInstant(point.savedAt)} 원고 보기</button>)}
+          {backup && <><label className="sr-only" htmlFor="protected-content">복원 전 보호한 원고</label><textarea className="snapshot-content" id="protected-content" readOnly value={backup.content} /><button type="button" className="text-button" onClick={() => setConfirmBackup(true)}>이 보호 원고로 돌아가기</button>
+            {confirmBackup && <div className="restore-confirm"><p>현재 원고도 다시 백업하고 선택한 원고로 돌아갈까요?</p><button className="text-button" onClick={() => setConfirmBackup(false)}>취소</button><button className="small-button" onClick={() => { if (onUpdate((p) => restoreWriting(p, { date: localDate(), content: backup.content, savedAt: backup.savedAt }))) { setConfirmBackup(false); setBackupId(null); } }}>백업하고 돌아가기</button></div>}</>}
+        </details>}
         <section className="project-details" aria-labelledby="project-details-heading">
           <div className="section-heading">
             <h2 id="project-details-heading">작품 소개</h2>
@@ -186,7 +205,7 @@ export function ProjectDashboard({
           </dl>
           <p className="privacy-note">
             예정일이 지나도 자동으로 게시되지는 않아요.
-            <br />{preview ? "디자인 미리보기의 입력은 저장되지 않으며 새로고침하면 사라집니다." : "이 프로젝트와 기록은 현재 브라우저에서만 볼 수 있어요."}
+            <br />{preview ? "디자인 미리보기의 입력은 저장되지 않으며 새로고침하면 사라집니다." : cloud ? "로그인한 본인만 볼 수 있는 계정 작업 공간이에요." : "이 프로젝트와 기록은 현재 브라우저에서만 볼 수 있어요."}
           </p>
         </section>
         <details className="legacy-notes">
@@ -249,11 +268,11 @@ export function ProjectDashboard({
       </div>
       <div className="dashboard-bottom">
         <p className="saved-notice" aria-hidden="true">
-          {notice || (preview ? "디자인 미리보기 · 저장되지 않음" : "프로젝트 · 비공개 로컬 체험")}
+          {notice || (preview ? "디자인 미리보기 · 저장되지 않음" : cloud ? "계정 프로젝트 · 비공개" : "프로젝트 · 비공개 로컬 체험")}
         </p>
-        <button className="text-button reset-button" onClick={onReset}>
+        {!cloud && <button className="text-button reset-button" onClick={onReset}>
           프로젝트 초기화
-        </button>
+        </button>}
       </div>
     </section>
   );
