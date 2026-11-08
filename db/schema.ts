@@ -33,3 +33,8 @@ export const releaseArtifacts = sqliteTable("release_artifacts", {
 export const usageLimits = sqliteTable("usage_limits", {
   key: text("key").primaryKey(), value: integer("value").notNull().default(0),
 }, (t) => [check("usage_nonnegative", sql`${t.value} >= 0`)]);
+export const importSessions = sqliteTable("import_sessions", {
+  id: text("id").primaryKey(), ownerId: text("owner_id").notNull().references(() => users.id),
+  projectId: text("project_id").notNull().references(() => projects.id), source: text("source").notNull(),
+  status: text("status").notNull().default("pending"), createdAt: text("created_at").notNull(), completedAt: text("completed_at"),
+}, (t) => [uniqueIndex("import_project_unique").on(t.projectId), index("import_owner_idx").on(t.ownerId)]);

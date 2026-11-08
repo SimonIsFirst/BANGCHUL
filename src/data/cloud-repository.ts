@@ -2,7 +2,9 @@ import type { LocalState, MediaVersion, Project } from "../domain/project";
 import { isLocalState } from "./local-repository.ts";
 import type { ProjectRepository, StoragePort } from "./local-repository";
 import type { PreparedUpload } from "./media-store";
-export interface CloudSnapshot { state: LocalState; revision: number }
+import { restoreWriting } from "../domain/restore.ts";
+export interface CloudSnapshot { state: LocalState; revision: number; importing?: boolean }
+export interface ProtectedDraft { id: string; state: LocalState; revision: number; pending: boolean; savedAt: string }
 export type SyncStatus = { kind: "saved" | "pending" | "error"; message: string };
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, { credentials: "same-origin", cache: "no-store", ...init });
@@ -12,6 +14,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 }
 export function createCloudRepository(userId: string, remote: CloudSnapshot, storage: StoragePort, send = (project: Project, revision: number) => api<{ revision: number }>("/api/project", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ project, revision }) })) {
   const key = `bangchul:account:v2:${encodeURIComponent(userId)}`;
+  // Each editor owns its key. Acknowledgements in another tab can never erase this draft.
+  const id = crypto.randomUUID(); const draftKey = `${key}:draft:${id}`;
   let current = remote.state; let revision = remote.revision; let pending = false; let conflict = false;
   let timer: ReturnType<typeof setTimeout> | undefined; let inFlight: Promise<void> | null = null;
   let status: SyncStatus = { kind: "saved", message: "서버의 최신 기록을 불러왔어요." };
@@ -19,17 +23,35 @@ export function createCloudRepository(userId: string, remote: CloudSnapshot, sto
   const listeners = new Set<() => void>();
   try {
     const raw = storage.getItem(key);
-    if (raw) {
+    if (raw && storage.getItem(`${key}:legacy-handled`) !== raw) {
       const cached = JSON.parse(raw);
       if (!isLocalState(cached.state) || !Number.isSafeInteger(cached.revision) || typeof cached.pending !== "boolean") throw new Error();
       if (cached.pending) { current = cached.state; revision = cached.revision; pending = true;
+        cache();
+        if (!storage.getItem(draftKey)) throw new Error();
+        storage.setItem(`${key}:legacy-handled`, raw);
         conflict = revision !== remote.revision;
         status = conflict ? { kind: "error", message: "다른 기기의 변경과 저장 대기 중인 원고가 있어요. 현재 내용을 내려받고 서버 기록을 별도로 확인해주세요. 자동으로 덮어쓰지 않습니다." } : { kind: "pending", message: "이 기기의 저장 대기 내용을 서버에 연결하고 있어요." };
       }
     }
   } catch { loadError = "이 계정의 기기 백업을 읽지 못했어요. 백업을 덮어쓰지 않았습니다."; status = { kind: "error", message: loadError }; }
   function notify(next: SyncStatus) { status = next; listeners.forEach((listener) => listener()); }
-  function cache() { storage.setItem(key, JSON.stringify({ state: current, revision, pending })); }
+  function cache() {
+    if (!pending) { storage.removeItem(draftKey); return; }
+    storage.setItem(draftKey, JSON.stringify({ id, state: current, revision, pending, savedAt: new Date().toISOString() }));
+  }
+  function getDrafts(): ProtectedDraft[] {
+    const drafts: ProtectedDraft[] = [];
+    for (let i = 0; i < (storage.length ?? 0); i++) {
+      const name = storage.key?.(i);
+      if (!name?.startsWith(`${key}:draft:`) || name === draftKey) continue;
+      try {
+        const value = JSON.parse(storage.getItem(name) ?? "null");
+        if (value?.pending && isLocalState(value.state) && Number.isSafeInteger(value.revision)) drafts.push(value);
+      } catch { /* A damaged entry stays untouched; other drafts remain recoverable. */ }
+    }
+    return drafts.sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+  }
   async function flush(): Promise<void> {
     if (timer) { clearTimeout(timer); timer = undefined; }
     if (inFlight) return inFlight;
@@ -76,10 +98,21 @@ export function createCloudRepository(userId: string, remote: CloudSnapshot, sto
       storage.setItem(backupKey, raw);
       if (storage.getItem(backupKey) !== raw) throw new Error("현재 기기 백업을 보호하지 못했어요. 작업 공간은 유지됩니다.");
     }
-    storage.setItem(key, JSON.stringify({ state: latest.state, revision: latest.revision, pending: false }));
+    if (raw) storage.setItem(`${key}:legacy-handled`, raw);
     return createCloudRepository(userId, latest, storage, send);
   }
-  return { id: crypto.randomUUID(), repository, flush, getStatus: () => status, hasPending: () => pending,
+  async function recoverDraft(draftId: string, load: () => Promise<CloudSnapshot>) {
+    const draft = getDrafts().find((value) => value.id === draftId);
+    if (!draft?.state.project?.workspace || (draft.state.project.kind ?? "writing") !== "writing") throw new Error("이 백업은 JSON으로 내려받아 확인해주세요.");
+    const latest = await load(); const project = latest.state.project;
+    if (latest.importing || project && (project.id !== draft.state.project.id || (project.kind ?? "writing") !== "writing")) throw new Error("동일한 글 프로젝트에서만 원고를 복구할 수 있어요.");
+    const next = await replaceFromServer(async () => latest);
+    const restored = project ? restoreWriting(project, { date: new Date().toISOString().slice(0, 10), content: draft.state.project.workspace.content, savedAt: draft.savedAt }) : draft.state.project;
+    const result = next.repository.save({ ...latest.state, project: restored });
+    if (!result.ok) { next.dispose(); throw new Error(result.error); }
+    return next;
+  }
+  return { id, repository, flush, getStatus: () => status, hasPending: () => pending, getDrafts, recoverDraft,
     replaceFromServer,
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
     dispose() { if (timer) clearTimeout(timer); listeners.clear(); },

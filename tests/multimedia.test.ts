@@ -11,7 +11,7 @@ import { assertSameOrigin, identity, limitedBody, parseRange } from "../worker/s
 
 const project = (kind: Project["kind"] = "writing") => createProject({ name: "창작자", title: "계절의 기록", description: "작은 작품", releaseDate: "2027-12-31", agreed: true, kind }, new Date(2026, 10, 8, 10));
 function version(p: Project, n: string): MediaVersion { return { id: `version-${n}`, projectId: p.id, kind: p.kind as "visual", filename: "작품.png", mime: "image/png", size: 100, sha256: n.repeat(64), originalKey: originalKey(p.id, `version-${n}`, "image/png"), createdAt: "2026-11-08T01:00:00Z" }; }
-function memory() { const data = new Map<string, string>(); return { data, getItem: (key: string) => data.get(key) ?? null, setItem: (key: string, value: string) => { data.set(key, value); }, removeItem: (key: string) => { data.delete(key); } }; }
+function memory() { const data = new Map<string, string>(); return { data, get length() { return data.size; }, key: (index: number) => [...data.keys()][index] ?? null, getItem: (key: string) => data.get(key) ?? null, setItem: (key: string, value: string) => { data.set(key, value); }, removeItem: (key: string) => { data.delete(key); } }; }
 
 test("v2 accepts all creative kinds while preserving legacy key and records exactly", () => {
   for (const kind of ["writing", "visual", "music"] as const) assert.equal(project(kind).kind, kind);
@@ -69,7 +69,7 @@ test("cloud save preserves browser original and separates account caches", async
 test("failed cloud writes keep pending backup; retry reports success only after real acknowledgement", async () => {
   const storage = memory(); let fail = true; const repo = createCloudRepository("alice", { state: emptyState(), revision: 0 }, storage, async () => { if (fail) throw new Error("offline"); return { revision: 1 }; });
   const state = { ...emptyState(), project: project() }; repo.repository.save(state);
-  await assert.rejects(repo.flush()); assert.equal(repo.hasPending(), true); assert.equal(repo.getStatus().kind, "error"); assert.equal(JSON.parse(storage.getItem("bangchul:account:v2:alice")!).pending, true);
+  await assert.rejects(repo.flush()); assert.equal(repo.hasPending(), true); assert.equal(repo.getStatus().kind, "error"); assert.equal(JSON.parse(storage.getItem(`bangchul:account:v2:alice:draft:${repo.id}`)!).pending, true);
   fail = false; await repo.flush(); assert.equal(repo.hasPending(), false); repo.dispose();
 });
 test("concurrent edits during a cloud write are serialized with the returned revision", async () => {
