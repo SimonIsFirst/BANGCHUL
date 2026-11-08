@@ -21,3 +21,11 @@ export function readExperience(search: string) {
     preview: params.get("preview") === "1",
   } as const;
 }
+
+/** Explicitly retain the chosen workspace across reloads without discarding design options. */
+export function withAccountMode(location: string, active: boolean): string {
+  const url = new URL(location, "https://bangchul.invalid");
+  if (active) url.searchParams.set("account", "1");
+  else url.searchParams.delete("account");
+  return `${url.pathname}${url.search}${url.hash}`;
+}

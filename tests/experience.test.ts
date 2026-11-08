@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { nextScene, ONBOARDING_SCENES, previousScene, readExperience } from "../src/domain/experience.ts";
+import { nextScene, ONBOARDING_SCENES, previousScene, readExperience, withAccountMode } from "../src/domain/experience.ts";
 import { emptyState, validateStep } from "../src/domain/project.ts";
 import { createPreviewRepository } from "../src/data/preview-repository.ts";
 import { isLocalState } from "../src/data/local-repository.ts";
@@ -42,4 +42,13 @@ test("review repository keeps navigation in memory and cannot read or clear the 
   assert.deepEqual(createPreviewRepository().load(), { ok: true, value: emptyState() });
   assert.equal(repo.clear().ok, true);
   assert.deepEqual(repo.load(), { ok: true, value: emptyState() });
+});
+
+test("explicit account/local choice survives reload and preserves unrelated design and anchor state", () => {
+  const account = withAccountMode("https://site.test/?design=minimal#workspace-content", true);
+  assert.equal(account, "/?design=minimal&account=1#workspace-content");
+  assert.equal(new URL(account, "https://site.test").searchParams.get("account"), "1");
+  assert.equal(withAccountMode(account, true), account);
+  assert.equal(withAccountMode(account, false), "/?design=minimal#workspace-content");
+  assert.equal(withAccountMode("https://site.test/?account=1", false), "/");
 });

@@ -8,7 +8,7 @@ import { readLocalFile } from "./data/media-store";
 import { AccountControls } from "./components/AccountControls";
 import type { AccountSession } from "./components/AccountControls";
 import { createPreviewRepository } from "./data/preview-repository";
-import { nextScene, ONBOARDING_SCENES, previousScene, readExperience } from "./domain/experience";
+import { nextScene, ONBOARDING_SCENES, previousScene, readExperience, withAccountMode } from "./domain/experience";
 import {
   createProject,
   emptyState,
@@ -344,18 +344,22 @@ function App() {
   }, [cloud]);
   async function openAccount() {
     if (!session?.user || busy) return; setBusy(true); setError("");
-    try { const remote = await api<CloudSnapshot>("/api/project"); setCloud(createCloudRepository(session.user.id, remote, window.localStorage)); }
+    try { const remote = await api<CloudSnapshot>("/api/project"); activateCloud(createCloudRepository(session.user.id, remote, window.localStorage)); }
     catch (cause) { setError((cause as Error).message); } finally { setBusy(false); }
   }
   async function localMode() {
-    setError(""); try { if (cloud) await cloud.flush(); setCloud(null); window.history.replaceState(null, "", window.location.pathname); }
+    setError(""); try { if (cloud) await cloud.flush(); setCloud(null); window.history.replaceState(null, "", withAccountMode(window.location.href, false)); }
     catch (cause) { setError((cause as Error).message); }
   }
   async function useServer() {
     if (!cloud || busy || !window.confirm("현재 기기의 기록을 별도 보호 백업으로 남긴 뒤 서버 기록을 열까요? 서버 내용은 바꾸지 않습니다.")) return;
     setBusy(true); setError("");
-    try { setCloud(await cloud.replaceFromServer(() => api<CloudSnapshot>("/api/project"))); }
+    try { activateCloud(await cloud.replaceFromServer(() => api<CloudSnapshot>("/api/project"))); }
     catch (cause) { setError((cause as Error).message); } finally { setBusy(false); }
+  }
+  function activateCloud(repository: CloudRepository) {
+    setCloud(repository);
+    window.history.replaceState(null, "", withAccountMode(window.location.href, true));
   }
   function backup() {
     try {
@@ -395,7 +399,7 @@ function App() {
       const verified = await api<CloudSnapshot>("/api/project");
       const normalize = (p: Project | null) => p ? { ...p, ...(p.mediaVersions ? { mediaVersions: [...p.mediaVersions].sort((a, b) => a.id.localeCompare(b.id)) } : {}), ...(p.restorePoints ? { restorePoints: [...p.restorePoints].sort((a, b) => a.id.localeCompare(b.id)) } : {}) } : null;
       if (verified.revision !== revision || canonical(normalize(verified.state.project)) !== canonical(normalize(copy))) throw new Error("복사한 기록의 검증을 완료하지 못했어요. 브라우저 원본은 그대로 유지됩니다.");
-      setCloud(createCloudRepository(session.user.id, verified, window.localStorage));
+      activateCloud(createCloudRepository(session.user.id, verified, window.localStorage));
     } catch (cause) { setError(`${(cause as Error).message} 가져오기가 중단됐다면 계정에 복사된 내용도 별도로 확인해주세요.`); }
     finally { setBusy(false); }
   }
