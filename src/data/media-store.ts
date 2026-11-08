@@ -1,5 +1,6 @@
 import type { MediaVersion, Project } from "../domain/project";
 import { fileError, hasFileSignature, originalKey, PROJECT_BYTES_LIMIT, PROJECT_FILE_LIMIT } from "../domain/media";
+import { validateImage } from "../domain/image-validation";
 
 interface StoredFile { key: string; projectId: string; blob: Blob }
 function database(): Promise<IDBDatabase> {
@@ -53,6 +54,7 @@ export interface PreparedUpload { original: File; preview?: Blob; thumbnail?: Bl
 export async function prepareUpload(file: File, project: Project): Promise<PreparedUpload> {
   const error = fileError(file, project.kind ?? "writing"); if (error) throw new Error(error);
   const bytes = await file.arrayBuffer();
+  if (project.kind === "visual") await validateImage(new Uint8Array(bytes), file.type);
   if (!hasFileSignature(new Uint8Array(bytes), file.type)) throw new Error("실제 파일 형식이 확장자와 일치하지 않아요. 파일을 다시 내보내주세요.");
   const hash = await crypto.subtle.digest("SHA-256", bytes);
   const sha256 = [...new Uint8Array(hash)].map((v) => v.toString(16).padStart(2, "0")).join("");

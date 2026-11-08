@@ -8,6 +8,13 @@
       "when": 1794121037204,
       "tag": "0000_little_natasha_romanoff",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1794140449565,
+      "tag": "0001_nappy_lethal_legion",
+      "breakpoints": true
     }
   ]
 }

@@ -10,7 +10,12 @@
 .account-menu summary { list-style:none; min-height:44px; display:flex; align-items:center; color:#d0c8b9; font-size:11px; cursor:pointer; gap:8px; }
 .account-menu summary::-webkit-details-marker { display:none; }
 .account-menu summary:focus-visible { outline:2px solid var(--foreground); outline-offset:3px; }
-.account-popover { position:absolute; z-index:25; right:0; top:100%; width:340px; max-width:calc(100vw - 36px); padding:26px; border:1px solid #575349; border-radius:8px; background:#141415; box-shadow:0 20px 80px #000a; display:flex; flex-direction:column; align-items:flex-start; gap:16px; }
+.account-popover { position:absolute; z-index:25; right:0; top:100%; width:340px; max-width:calc(100vw - 36px); max-height:calc(100dvh - 100px); overflow-y:auto; overscroll-behavior:contain; padding:26px; border:1px solid #575349; border-radius:8px; background:#141415; box-shadow:0 20px 80px #000a; display:flex; flex-direction:column; align-items:flex-start; gap:16px; }
+.protected-drafts { width:100%; border-top:1px solid #575349; padding-top:16px; }
+.protected-drafts h3 { font-size:13px; font-weight:500; margin-bottom:8px; }
+.protected-drafts details { padding-block:12px; border-bottom:1px solid #343434; font-size:12px; }
+.protected-drafts summary { cursor:pointer; line-height:1.8; overflow-wrap:anywhere; }
+.protected-drafts pre { white-space:pre-wrap; overflow-wrap:anywhere; max-height:180px; overflow:auto; padding:12px; margin:12px 0; background:#ffffff08; font:inherit; line-height:1.8; color:var(--foreground); }
 .account-popover h2 { font-family:var(--serif); font-size:24px; font-weight:300; line-height:1.6; }
 .account-popover p { font-size:12px; line-height:1.9; color:#bbb7ac; overflow-wrap:anywhere; }
 .account-popover .section-label, .account-popover .account-provider-note { font-size:10px; color:#93938a; }

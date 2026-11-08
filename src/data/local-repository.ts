@@ -14,6 +14,8 @@ export const STORAGE_KEY = "bangchul:mvp:v1";
 export type RepositoryResult<T> =
   { ok: true; value: T } | { ok: false; error: string };
 export interface StoragePort {
+  readonly length?: number;
+  key?(index: number): string | null;
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;

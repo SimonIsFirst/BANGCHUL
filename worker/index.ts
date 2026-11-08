@@ -1,6 +1,7 @@
 import { readProject, writeProject } from "./database.ts";
 import { reserve, serveFile, uploadFile } from "./files.ts";
 import { assertSameOrigin, HttpError, identity, json, limitedBody, validId } from "./security.ts";
+import { completeImport, startImport } from "./imports.ts";
 
 export interface Env { DB?: D1Database; BUCKET?: R2Bucket; IDENTITY_PROVIDER?: string }
 declare const STATIC_ASSETS: Record<string, { mime: string; body: string }>;
@@ -26,6 +27,12 @@ export default {
         await reserve(env.DB, [{ key: `writes:${user.id}:${Math.floor(Date.now() / 60_000)}`, amount: 1, max: 60 }, { key: `writes:global:${new Date().toISOString().slice(0, 10)}`, amount: 1, max: 7000 }]);
       }
       if (url.pathname === "/api/project" && request.method === "GET") return json(await readProject(env.DB, user.id));
+      if (url.pathname === "/api/imports/start" && request.method === "POST") {
+        const body = JSON.parse(encoder.decode(await limitedBody(request, 8 * 1024 * 1024))) as { source: unknown };
+        return json(await startImport(env.DB, env.BUCKET, user.id, body.source));
+      }
+      const complete = /^\/api\/imports\/([^/]+)\/complete$/.exec(url.pathname);
+      if (complete && validId(complete[1]) && request.method === "POST") return json(await completeImport(env.DB, env.BUCKET, user.id, complete[1]));
       if (url.pathname === "/api/project" && request.method === "PUT") {
         if (!request.headers.get("content-type")?.startsWith("application/json")) throw new HttpError(415, "JSON 형식으로 저장해주세요.");
         const body = JSON.parse(encoder.decode(await limitedBody(request, 8 * 1024 * 1024))) as { project: unknown; revision: unknown };
